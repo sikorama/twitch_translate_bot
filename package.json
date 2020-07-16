@@ -1,0 +1,20 @@
+{
+  "name": "simple_test",
+  "version": "1.0.0",
+  "description": "Simple Standalone Twitch Bot Test",
+  "main": "bot.js",
+  "dependencies": {
+    "googletrans": "^1.0.0",
+    "tmi.js": "^1.5.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "bot",
+    "twitch"
+  ],
+  "author": "siko",
+  "license": "ISC"
+}
