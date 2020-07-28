@@ -8,7 +8,7 @@ const gtrans = require('googletrans').default;
 
 // Define configuration options here
 // username is the name of the channel/bot
-// password is generated on XXXX page
+// password is generated on https://twitchapps.com/tmi/ page
 // channels is an array of channels where the bot will go
 const opts = {
   identity: {
