@@ -8,7 +8,7 @@ In order to use this script you must
 * Generate a key for authenticating your bot, using the Twitch Chat OAuth Password Generator: https://twitchapps.com/tmi/
 
 # Setup
-Then you have to modify the script in order to use your channel+key, and simply install npm packages and run the script, by executing thesez commands in the folder where you have stored your copy of the `bot.js` script
+Then you have to modify the script in order to use your channel+key, and simply install npm packages and run the script, by executing these commands in the folder where you have stored your copy of the `bot.js` script
 
 ```
 npm install
