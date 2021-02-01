@@ -7,25 +7,43 @@ const tmi = require('tmi.js');
 const gtrans = require('googletrans').default;
 
 // Define configuration options here
-// username is the name of the channel/bot
-// password is generated on https://twitchapps.com/tmi/ page
-// channels is an array of channels where the bot will go
+// - username is the name of the channel/bot
+// - password is generated on https://twitchapps.com/tmi/ page
+// - channels is an array of channels
+// - connection: defines additional options
+//
+// username and password are defined after CHANNEL_NAME and CHANNEL_PASSWORD environment variables
+// (you also can overwrite botname and botpassword here)
+let botname = process.env.CHANNEL_NAME;
+let botpassword = process.env.CHANNEL_PASSWORD;
+// TODO: If no channel & password, then exit...
+if ((botname == undefined) || (botpassword == undefined)) {
+  console.error('No CHANNEL_NAME or CHANNEL_PASSWORD environment variable found. Exiting.');
+  process.exit(-1);
+}
+// add oauth: before botpassword
+botpassword = 'oauth:' + botpassword;
+
 const opts = {
   identity: {
-    username: 'XXXXXXXXX',
-    password: 'oauth:XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
+    username: botname,
+    password: botpassword
   },
   channels: [
-    'sikorama'
-  ]
+    // using bot's channel is great for testing, but not mandatory
+    botname
+    //more channels
+  ],
+  // Automatic reconnection
+  connection: { reconnect: true }
 };
 // Create a client with our options
 const client = new tmi.client(opts);
 
 const tr_lang = {
-  'de': ['de', 'hat gesagt'],
-  'en': ['en', 'has said'],
-  'fr': ['fr', 'a dit'],
+  'de': ['de', 'sagt'],
+  'en': ['en', 'says'],
+  'fr': ['fr', 'dit'],
   'pt': ['pt', 'disse'],
 };
 
@@ -42,19 +60,43 @@ function onMessageHandler(target, context, msg, self) {
   if (self) { return; }
 
   // Remove whitespace from chat message
-  var tMsg = msg.trim();
+  let tMsg = msg.trim();
+
+  // Check if the message starts with @name
+  // in that case, extract the name and move the @name at the end of the message, and process
+  if (tMsg[0] === '@') {
+    let atnameEndIndex = tMsg.indexOf(' ');
+    let atname = tMsg.subString(0, atnameEndIndex);
+    let msg = tMsg.subString(atnameEndIndex + 1);
+    tMsg = msg + ' ' + atname;
+    console.info('Changed message :', tMsg);
+  }
+
   // Filter commands (options)
   if (tMsg[0] != '!') return;
 
   // Extract command
-  var cmd = tMsg.split(' ')[0].substring(1).toLowerCase();
+  let cmd = tMsg.split(' ')[0].substring(1).toLowerCase();
 
   // Name for answering
-  var answername = '@' + context['display-name'];
+  let answername = '@' + context['display-name'];
 
-  // Command for displaying the commands
+  // Command for displaying the commands (in english)
   if (cmd === "lang" || cmd === "translate") {
     client.say(target, 'I can (approximatevely) translate your messages in many languages. Simply start your message with one of these commands: !en (english) !fr (french)  !de (german) !pt (portuguese)... ');
+    return;
+  }
+
+  // Commands for displaying messages explaining the translation feature in various languages
+  // TODO: sentences
+  const explanations = {
+  //    'germans': '',
+  //    'spanish': '',
+    'french' : 'Vous pouvez utilise notre bot traducteur. Commencez votre message par !en pour traduire votre message en anglais. Par exemple "!en Bonjour"',
+  }
+  if (cmd in explanations)
+  {
+    client.say(target, explanations[cmd]);
     return;
   }
 
@@ -73,24 +115,24 @@ function onMessageHandler(target, context, msg, self) {
 
       gtrans(txt, { to: ll[0] }).then(res => {
         if (lazy === true) {
+          // Long sentence  => lazy
           if (ll[0].indexOf('en') == 0) {
             client.say(target, context['display-name'] + ', ' + txt);
           }
           else
+            // lazy mode sentence in english and also in requested language
             client.say(target, context['display-name'] + ', ' + txt + '/' + res.text);
         }
-        else
+        else {
+          // Translation
+          // TODO: Check is translated text == original text. In that case it
+          // means the command was not correctly used (ex: "!en hello friends")
           client.say(target, context['display-name'] + ' ' + ll[1] + ': ' + res.text);
+        }
       }).catch(err => {
         console.error('Translation Error:', err);
       })
     }
-  }
-
-  // This command for logging
-  if (tMsg === '!test') {
-    console.log('* target = ', target); // Channel
-    console.log('* context = ', context); // User info
   }
 }
 
