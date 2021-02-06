@@ -56,84 +56,93 @@ client.connect();
 
 // Called every time a message comes in
 function onMessageHandler(target, context, msg, self) {
-  // Ignore messages from the bot
-  if (self) { return; }
+  try {
 
-  // Remove whitespace from chat message
-  let tMsg = msg.trim();
+    // Ignore messages from the bot
+    if (self) { return; }
 
-  // Check if the message starts with @name
-  // in that case, extract the name and move the @name at the end of the message, and process
-  if (tMsg[0] === '@') {
-    let atnameEndIndex = tMsg.indexOf(' ');
-    let atname = tMsg.subString(0, atnameEndIndex);
-    let msg = tMsg.subString(atnameEndIndex + 1);
-    tMsg = msg + ' ' + atname;
-    console.info('Changed message :', tMsg);
-  }
+    // Remove whitespace from chat message
+    let tMsg = msg.trim();
 
-  // Filter commands (options)
-  if (tMsg[0] != '!') return;
+    // Check if the message starts with @name
+    // in that case, extract the name and move the @name at the end of the message, and process
+    if (tMsg[0] === '@') {
+      let atnameEndIndex = tMsg.indexOf(' ');
+      let atname = tMsg.substring(0, atnameEndIndex);
+      let msg = tMsg.substring(atnameEndIndex + 1);
+      tMsg = msg + ' ' + atname;
+      console.info('Changed message :', tMsg);
+    }
 
-  // Extract command
-  let cmd = tMsg.split(' ')[0].substring(1).toLowerCase();
+    // Filter commands (options)
+    if (tMsg[0] != '!') return;
 
-  // Name for answering
-  let answername = '@' + context['display-name'];
+    // Extract command
+    let cmd = tMsg.split(' ')[0].substring(1).toLowerCase();
 
-  // Command for displaying the commands (in english)
-  if (cmd === "lang" || cmd === "translate") {
-    client.say(target, 'I can (approximatevely) translate your messages in many languages. Simply start your message with one of these commands: !en (english) !fr (french)  !de (german) !pt (portuguese)... ');
-    return;
-  }
+    // Name for answering
+    let answername = '@' + context['display-name'];
 
-  // Commands for displaying messages explaining the translation feature in various languages
-  // TODO: sentences
-  const explanations = {
-  //    'germans': '',
-  //    'spanish': '',
-    'french' : 'Vous pouvez utilise notre bot traducteur. Commencez votre message par !en pour traduire votre message en anglais. Par exemple "!en Bonjour"',
-  }
-  if (cmd in explanations)
-  {
-    client.say(target, explanations[cmd]);
-    return;
-  }
+    // Command for displaying the commands (in english)
+    if (cmd === "lang" || cmd === "translate") {
+      client.say(target, 'I can (approximatevely) translate your messages in many languages. Simply start your message with one of these commands: !en (english) !fr (french)  !de (german) !pt (portuguese)... ');
+      return;
+    }
 
-  if (cmd in tr_lang) {
-    var ll = tr_lang[cmd];
-    //console.error(ll);
-    var txt = tMsg.substring(1 + cmd.length);
+    // Commands for displaying messages explaining the translation feature in various languages
+    // TODO: sentences
+    const explanations = {
+      //    'germans': '',
+      //    'spanish': '',
+      'french': 'Vous pouvez utiliser notre bot traducteur. Commencez votre message par !en pour traduire votre message en anglais. Par exemple "!en Bonjour"',
+    }
+    if (cmd in explanations) {
+      client.say(target, explanations[cmd]);
+      return;
+    }
 
-    // Text must be at least 2 characters and max 200 characters
-    var lazy = false;
-    if (txt.length > 2) {
-      if (txt.length > 200) {
-        lazy = true;
-        txt = "i'm too lazy to translate long sentences ^^";
-      }
+    if (cmd in tr_lang) {
+      var ll = tr_lang[cmd];
+      //console.error(ll);
+      var txt = tMsg.substring(1 + cmd.length);
 
-      gtrans(txt, { to: ll[0] }).then(res => {
-        if (lazy === true) {
-          // Long sentence  => lazy
-          if (ll[0].indexOf('en') == 0) {
-            client.say(target, context['display-name'] + ', ' + txt);
-          }
-          else
+      // Text must be at least 2 characters and max 200 characters
+      var lazy = false;
+      if (txt.length > 2) {
+        if (txt.length > 200) {
+          lazy = true;
+          txt = "i'm too lazy to translate long sentences ^^";
+        }
+
+        // Lazy mode, and english target => no translation, only displays 'lazy' message in english
+        if ((lazy === true) && (ll[0].indexOf('en') == 0)) {
+          say(target, context['display-name'] + ', ' + txt);
+          return;
+        }
+
+        // Translate text
+        gtrans(txt, { to: ll[0] }).then(res => {
+          if (lazy === true) {
             // lazy mode sentence in english and also in requested language
             client.say(target, context['display-name'] + ', ' + txt + '/' + res.text);
-        }
-        else {
-          // Translation
-          // TODO: Check is translated text == original text. In that case it
-          // means the command was not correctly used (ex: "!en hello friends")
-          client.say(target, context['display-name'] + ' ' + ll[1] + ': ' + res.text);
-        }
-      }).catch(err => {
-        console.error('Translation Error:', err);
-      })
+          }
+          else {
+            // Translation
+            // TODO: Check is translated text == original text. In that case it
+            // means the command was not correctly used (ex: "!en hello friends")
+            client.say(target, context['display-name'] + ' ' + ll[1] + ': ' + res.text);
+          }
+        }).catch(err => {
+          console.error('Translation Error:', err);
+        })
+      }
     }
   }
+  catch (e) {
+    console.error(e.stack);
+  }
+
+
 }
 
 // Called every time the bot connects to Twitch chat
